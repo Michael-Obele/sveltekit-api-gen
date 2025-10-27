@@ -10,6 +10,9 @@ node_modules
 /build
 /dist
 
+# npm pack tarballs
+*.tgz
+
 # OS
 .DS_Store
 Thumbs.db
