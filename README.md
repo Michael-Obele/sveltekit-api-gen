@@ -164,14 +164,15 @@ Create a file for shared component schemas:
 
 #### In Your Svelte Components
 
-```svelte
+```html
 <script lang="ts">
 	import spec from 'virtual:openapi-spec';
 
 	console.log('Available paths:', Object.keys(spec.paths));
 </script>
 
-<h1>API Documentation</h1><pre>{JSON.stringify(spec, null, 2)}</pre>
+<h1>API Documentation</h1>
+<pre>{JSON.stringify(spec, null, 2)}</pre>
 ```
 
 #### Via Dev Middleware
