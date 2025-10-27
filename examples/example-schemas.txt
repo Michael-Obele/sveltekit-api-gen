@@ -1,0 +1,64 @@
+/**
+ * Example shared schemas file for OpenAPI documentation
+ *
+ * This file demonstrates how to define reusable component schemas
+ * that can be referenced in your API endpoints using $ref
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     User:
+ *       type: object
+ *       required:
+ *         - id
+ *         - email
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: Unique user identifier
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User email address
+ *         name:
+ *           type: string
+ *           description: User full name
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *           description: Account creation timestamp
+ *
+ *     UserInput:
+ *       type: object
+ *       required:
+ *         - email
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: User email address
+ *         name:
+ *           type: string
+ *           description: User full name
+ *
+ *     Error:
+ *       type: object
+ *       required:
+ *         - message
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Error message
+ *         code:
+ *           type: string
+ *           description: Error code
+ *
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */

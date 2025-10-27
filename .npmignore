@@ -1,0 +1,49 @@
+# Source files
+src/
+!src/lib/
+
+# Tests
+*.test.ts
+*.spec.ts
+*.test.js
+*.spec.js
+/e2e/
+/tests/
+
+# Config files
+vite.config.ts
+vitest.config.ts
+vitest-setup-client.ts
+playwright.config.ts
+svelte.config.js
+tsconfig.json
+
+# Development
+.env*
+.DS_Store
+node_modules/
+/plan/
+/static/
+
+# Build artifacts
+.svelte-kit/
+build/
+.vercel/
+.netlify/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+
+# Documentation (keep README, LICENSE, CHANGELOG)
+/docs/
