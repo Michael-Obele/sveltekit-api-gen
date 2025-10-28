@@ -57,9 +57,9 @@
 	<meta name="description" content="Interactive API documentation for this SvelteKit application" />
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 dark:bg-gray-950">
 	<header
-		class="bg-linear-to-br from-indigo-600 via-purple-600 to-purple-700 px-4 py-8 text-center text-white shadow-lg"
+		class="bg-linear-to-br from-indigo-600 via-purple-600 to-purple-700 px-4 py-8 text-center text-white shadow-lg dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900"
 	>
 		<h1 class="mb-2 text-4xl font-bold">API Documentation</h1>
 		<p class="text-lg opacity-90">Explore and test the API endpoints</p>
@@ -67,16 +67,20 @@
 
 	<!-- Debug: Show if spec is loaded -->
 	{#if spec}
-		<div class="m-4 rounded border-l-4 border-cyan-500 bg-cyan-50 p-4">
-			<strong class="text-cyan-900">Debug:</strong>
-			<span class="text-cyan-700"
-				>Spec loaded with {Object.keys(spec.paths || {}).length} paths</span
-			>
+		<div
+			class="m-4 rounded border-l-4 border-cyan-500 bg-cyan-50 p-4 dark:border-cyan-600 dark:bg-cyan-950"
+		>
+			<strong class="text-cyan-900 dark:text-cyan-100">Debug:</strong>
+			<span class="text-cyan-700 dark:text-cyan-300">
+				Spec loaded with {Object.keys(spec.paths || {}).length} paths
+			</span>
 		</div>
 	{:else}
-		<div class="m-4 rounded border-l-4 border-red-500 bg-red-50 p-4">
-			<strong class="text-red-900">Error:</strong>
-			<span class="text-red-700">No spec loaded</span>
+		<div
+			class="m-4 rounded border-l-4 border-red-500 bg-red-50 p-4 dark:border-red-600 dark:bg-red-950"
+		>
+			<strong class="text-red-900 dark:text-red-100">Error:</strong>
+			<span class="text-red-700 dark:text-red-300">No spec loaded</span>
 		</div>
 	{/if}
 
@@ -91,5 +95,14 @@
 
 	:global(.swagger-ui .information-container) {
 		margin: 2rem 0;
+	}
+
+	/* Dark mode support for Swagger UI */
+	:global(.dark .swagger-ui) {
+		filter: invert(0.9) hue-rotate(180deg);
+	}
+
+	:global(.dark .swagger-ui .opblock-tag) {
+		filter: invert(0.9) hue-rotate(180deg);
 	}
 </style>
