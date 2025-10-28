@@ -1,9 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { dev } from '$app/environment';
 	import spec from 'virtual:openapi-spec';
 	import 'swagger-ui-dist/swagger-ui.css';
 
 	let containerElement: HTMLElement;
+
+	// Get the current server URL reactively
+	let currentOrigin = $derived(page.url.origin);
+
+	// Create a modified spec with the current server URL
+	let specWithServer = $derived({
+		...spec,
+		servers: [
+			{
+				url: currentOrigin,
+				description: dev ? 'Development server' : 'Production server'
+			}
+		]
+	});
 
 	// Debug: Log the spec to see what we're getting
 	console.log('Loaded spec:', spec);
@@ -20,10 +36,10 @@
 			// @ts-ignore - swagger-ui-dist doesn't have types
 			const { SwaggerUIBundle, SwaggerUIStandalonePreset } = await import('swagger-ui-dist');
 
-			console.log('Initializing Swagger UI with spec:', spec);
+			console.log('Initializing Swagger UI with spec:', specWithServer);
 
 			SwaggerUIBundle({
-				spec: spec,
+				spec: specWithServer,
 				domNode: containerElement,
 				deepLinking: true,
 				presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset]
@@ -41,58 +57,33 @@
 	<meta name="description" content="Interactive API documentation for this SvelteKit application" />
 </svelte:head>
 
-<div class="docs-page">
-	<header class="header">
-		<h1>API Documentation</h1>
-		<p class="subtitle">Explore and test the API endpoints</p>
+<div class="min-h-screen bg-gray-50">
+	<header
+		class="bg-linear-to-br from-indigo-600 via-purple-600 to-purple-700 px-4 py-8 text-center text-white shadow-lg"
+	>
+		<h1 class="mb-2 text-4xl font-bold">API Documentation</h1>
+		<p class="text-lg opacity-90">Explore and test the API endpoints</p>
 	</header>
 
 	<!-- Debug: Show if spec is loaded -->
 	{#if spec}
-		<div style="padding: 1rem; background: #e0f7fa; margin: 1rem;">
-			<strong>Debug:</strong> Spec loaded with {Object.keys(spec.paths || {}).length} paths
+		<div class="m-4 rounded border-l-4 border-cyan-500 bg-cyan-50 p-4">
+			<strong class="text-cyan-900">Debug:</strong>
+			<span class="text-cyan-700"
+				>Spec loaded with {Object.keys(spec.paths || {}).length} paths</span
+			>
 		</div>
 	{:else}
-		<div style="padding: 1rem; background: #ffebee; margin: 1rem;">
-			<strong>Error:</strong> No spec loaded
+		<div class="m-4 rounded border-l-4 border-red-500 bg-red-50 p-4">
+			<strong class="text-red-900">Error:</strong>
+			<span class="text-red-700">No spec loaded</span>
 		</div>
 	{/if}
 
-	<div id="swagger-ui-container" bind:this={containerElement}></div>
+	<div id="swagger-ui-container" class="mx-auto max-w-7xl p-8" bind:this={containerElement}></div>
 </div>
 
 <style>
-	.docs-page {
-		min-height: 100vh;
-		background: #fafafa;
-	}
-
-	.header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 2rem;
-		text-align: center;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
-
-	.header h1 {
-		margin: 0;
-		font-size: 2.5rem;
-		font-weight: 700;
-	}
-
-	.subtitle {
-		margin: 0.5rem 0 0 0;
-		font-size: 1.1rem;
-		opacity: 0.9;
-	}
-
-	#swagger-ui-container {
-		max-width: 1400px;
-		margin: 0 auto;
-		padding: 2rem;
-	}
-
 	/* Override some Swagger UI styles for better integration */
 	:global(.swagger-ui .topbar) {
 		display: none;

@@ -1,6 +1,11 @@
-# Source files
+# Source files (exclude everything except src/lib/)
 src/
 !src/lib/
+
+# Specifically exclude routes (demo/docs site)
+src/routes/
+src/app.css
+src/app.html
 
 # Tests
 *.test.ts

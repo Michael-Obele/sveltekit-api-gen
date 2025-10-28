@@ -19,6 +19,21 @@ This Vite plugin scans your SvelteKit `+page.server.{js,ts}` and `+server.{js,ts
 - 🧩 **Shared Schemas** - Centralize component definitions to avoid duplication
 - 📖 **Swagger UI Ready** - Easy integration with Swagger UI for interactive docs
 
+## 🎨 Styling
+
+Demo pages use Tailwind CSS for modern, responsive styling. **Package size remains 76KB** - Tailwind is a devDependency only, and demo routes are excluded from the npm package.
+
+If you want to use this library's components with Tailwind in your project, add the package to your `tailwind.config.js`:
+
+```javascript
+export default {
+	content: [
+		'./src/**/*.{html,js,svelte,ts}',
+		'./node_modules/sveltekit-openapi-generator/**/*.{html,js,svelte,ts}'
+	]
+};
+```
+
 ## 📦 Installation
 
 ```bash

@@ -1,11 +1,12 @@
 import { json } from '@sveltejs/kit';
+import { todoStore, type TodoInput } from '$lib/server/todos.svelte';
 
 /**
  * @swagger
  * /api/todos:
  *   get:
  *     summary: Get all todos
- *     description: Retrieve a list of all todos
+ *     description: Retrieve a list of all todos from in-memory reactive state
  *     tags:
  *       - Todos
  *     responses:
@@ -19,21 +20,7 @@ import { json } from '@sveltejs/kit';
  *                 $ref: '#/components/schemas/Todo'
  */
 export async function GET() {
-	const todos = [
-		{
-			id: '1',
-			title: 'Implement OpenAPI generator',
-			completed: true,
-			createdAt: new Date().toISOString()
-		},
-		{
-			id: '2',
-			title: 'Write documentation',
-			completed: false,
-			createdAt: new Date().toISOString()
-		}
-	];
-
+	const todos = todoStore.getAll();
 	return json(todos);
 }
 
@@ -42,7 +29,7 @@ export async function GET() {
  * /api/todos:
  *   post:
  *     summary: Create a new todo
- *     description: Add a new todo to the list
+ *     description: Add a new todo to the in-memory reactive state
  *     tags:
  *       - Todos
  *     requestBody:
@@ -66,18 +53,12 @@ export async function GET() {
  *               $ref: '#/components/schemas/Error'
  */
 export async function POST({ request }) {
-	const data = await request.json();
+	const data = (await request.json()) as TodoInput;
 
-	if (!data.title) {
+	if (!data.title || data.title.trim() === '') {
 		return json({ message: 'Title is required', code: 'INVALID_INPUT' }, { status: 400 });
 	}
 
-	const newTodo = {
-		id: Date.now().toString(),
-		title: data.title,
-		completed: data.completed ?? false,
-		createdAt: new Date().toISOString()
-	};
-
+	const newTodo = todoStore.create(data);
 	return json(newTodo, { status: 201 });
 }

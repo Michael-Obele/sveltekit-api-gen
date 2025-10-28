@@ -1,9 +1,11 @@
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { sveltekit } from '@sveltejs/kit/vite';
 import openapiPlugin from './src/lib/index.js';
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		openapiPlugin({
 			baseSchemasPath: 'src/lib/schemas.js',
 			prependPath: '',
