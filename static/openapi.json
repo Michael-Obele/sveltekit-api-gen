@@ -15,7 +15,7 @@
     "/api/todos": {
       "get": {
         "summary": "Get all todos",
-        "description": "Retrieve a list of all todos",
+        "description": "Retrieve a list of all todos from in-memory reactive state",
         "tags": [
           "Todos"
         ],
@@ -37,7 +37,7 @@
       },
       "post": {
         "summary": "Create a new todo",
-        "description": "Add a new todo to the list",
+        "description": "Add a new todo to the in-memory reactive state",
         "tags": [
           "Todos"
         ],
@@ -78,7 +78,7 @@
     "/api/todos/{id}": {
       "get": {
         "summary": "Get a todo by ID",
-        "description": "Retrieve a specific todo by its unique identifier",
+        "description": "Retrieve a specific todo by its unique identifier from in-memory reactive state",
         "tags": [
           "Todos"
         ],
@@ -116,9 +116,69 @@
           }
         }
       },
+      "put": {
+        "summary": "Update a todo",
+        "description": "Update an existing todo by its ID using reactive state",
+        "tags": [
+          "Todos"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The todo ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Todo updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Todo not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "summary": "Delete a todo",
-        "description": "Remove a todo by its ID",
+        "description": "Remove a todo by its ID from in-memory reactive state",
         "tags": [
           "Todos"
         ],

@@ -1,6 +1,8 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import type { OpenAPIV3 } from 'openapi-types';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
+import yaml from 'js-yaml';
 
 export interface BaseSpecOptions {
 	/**
@@ -32,7 +34,7 @@ export interface BaseSpecOptions {
 export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 	const {
 		info = {
-			title: 'API Documentation',
+			title: 'SvelteKit API',
 			version: '1.0.0',
 			description: 'Auto-generated API documentation from SvelteKit endpoints'
 		},
@@ -47,17 +49,18 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 		openapi: '3.0.0',
 		info,
 		servers,
-		paths: {},
-		components: {
-			schemas: {}
-		}
+		paths: {}
 	};
+
+	// Only add components if we have schemas to add
+	let hasComponents = false;
+	const components: OpenAPIV3.ComponentsObject = {};
 
 	// If baseSchemasPath is provided, parse it for shared schemas
 	if (baseSchemasPath) {
 		try {
 			const schemaFilePath = resolve(rootDir, baseSchemasPath);
-			const apis = [schemaFilePath, ...yamlFiles.map((f) => resolve(rootDir, f))];
+			const apis = [schemaFilePath];
 
 			const schemaSpec = swaggerJsdoc({
 				definition: {
@@ -69,54 +72,45 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 			}) as OpenAPIV3.Document;
 
 			// Merge schemas from the schema file
-			if (schemaSpec.components?.schemas) {
-				baseSpec.components = {
-					...baseSpec.components,
-					schemas: {
-						...baseSpec.components?.schemas,
-						...schemaSpec.components.schemas
-					}
-				};
+			if (schemaSpec.components?.schemas && Object.keys(schemaSpec.components.schemas).length > 0) {
+				components.schemas = { ...components.schemas, ...schemaSpec.components.schemas };
+				hasComponents = true;
 			}
 
 			// Also merge other component types if present
 			if (schemaSpec.components?.securitySchemes) {
-				baseSpec.components = {
-					...baseSpec.components,
-					securitySchemes: schemaSpec.components.securitySchemes
+				components.securitySchemes = {
+					...components.securitySchemes,
+					...schemaSpec.components.securitySchemes
 				};
+				hasComponents = true;
 			}
 
 			if (schemaSpec.components?.responses) {
-				baseSpec.components = {
-					...baseSpec.components,
-					responses: schemaSpec.components.responses
-				};
+				components.responses = { ...components.responses, ...schemaSpec.components.responses };
+				hasComponents = true;
 			}
 
 			if (schemaSpec.components?.parameters) {
-				baseSpec.components = {
-					...baseSpec.components,
-					parameters: schemaSpec.components.parameters
-				};
+				components.parameters = { ...components.parameters, ...schemaSpec.components.parameters };
+				hasComponents = true;
 			}
 
 			if (schemaSpec.components?.requestBodies) {
-				baseSpec.components = {
-					...baseSpec.components,
-					requestBodies: schemaSpec.components.requestBodies
+				components.requestBodies = {
+					...components.requestBodies,
+					...schemaSpec.components.requestBodies
 				};
+				hasComponents = true;
 			}
 
 			if (schemaSpec.components?.headers) {
-				baseSpec.components = {
-					...baseSpec.components,
-					headers: schemaSpec.components.headers
-				};
+				components.headers = { ...components.headers, ...schemaSpec.components.headers };
+				hasComponents = true;
 			}
 
 			console.log(
-				`[openapi] Loaded ${Object.keys(baseSpec.components?.schemas || {}).length} shared schemas from ${baseSchemasPath}`
+				`[openapi] Loaded ${Object.keys(components.schemas || {}).length} shared schemas from ${baseSchemasPath}`
 			);
 		} catch (error) {
 			console.error(
@@ -124,6 +118,64 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 				error instanceof Error ? error.message : error
 			);
 		}
+	}
+
+	// Parse YAML files separately
+	for (const yamlFile of yamlFiles) {
+		try {
+			const yamlFilePath = resolve(rootDir, yamlFile);
+			const yamlContent = readFileSync(yamlFilePath, 'utf-8');
+			const yamlData = yaml.load(yamlContent) as Partial<OpenAPIV3.Document>;
+
+			// Merge components from YAML file
+			if (yamlData.components?.schemas) {
+				components.schemas = { ...components.schemas, ...yamlData.components.schemas };
+				hasComponents = true;
+			}
+
+			if (yamlData.components?.securitySchemes) {
+				components.securitySchemes = {
+					...components.securitySchemes,
+					...yamlData.components.securitySchemes
+				};
+				hasComponents = true;
+			}
+
+			if (yamlData.components?.responses) {
+				components.responses = { ...components.responses, ...yamlData.components.responses };
+				hasComponents = true;
+			}
+
+			if (yamlData.components?.parameters) {
+				components.parameters = { ...components.parameters, ...yamlData.components.parameters };
+				hasComponents = true;
+			}
+
+			if (yamlData.components?.requestBodies) {
+				components.requestBodies = {
+					...components.requestBodies,
+					...yamlData.components.requestBodies
+				};
+				hasComponents = true;
+			}
+
+			if (yamlData.components?.headers) {
+				components.headers = { ...components.headers, ...yamlData.components.headers };
+				hasComponents = true;
+			}
+
+			console.log(`[openapi] Loaded components from YAML file ${yamlFile}`);
+		} catch (error) {
+			console.error(
+				`[openapi] Failed to parse YAML file ${yamlFile}:`,
+				error instanceof Error ? error.message : error
+			);
+		}
+	}
+
+	// Only add components to baseSpec if we actually have components
+	if (hasComponents) {
+		baseSpec.components = components;
 	}
 
 	return baseSpec;
