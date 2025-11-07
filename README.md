@@ -7,6 +7,12 @@
 
 This Vite plugin scans your SvelteKit `+page.server.{js,ts}` and `+server.{js,ts}` files, extracts `@swagger` JSDoc blocks, and produces a unified OpenAPI spec with Hot Module Replacement (HMR) support.
 
+## 🔗 Links
+
+- **📖 Documentation & Demo**: [https://sveltekit-openapi-generator.netlify.app](https://sveltekit-openapi-generator.netlify.app)
+- **📦 npm Package**: [https://www.npmjs.com/package/sveltekit-openapi-generator](https://www.npmjs.com/package/sveltekit-openapi-generator)
+- **🐙 GitHub Repository**: [https://github.com/Michael-Obele/sveltekit-api-gen](https://github.com/Michael-Obele/sveltekit-api-gen)
+
 ## ✨ Features
 
 - 🔥 **Hot Module Replacement** - Specs update live as you edit JSDoc
