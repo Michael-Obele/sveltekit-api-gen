@@ -21,11 +21,6 @@
 		]
 	});
 
-	// Debug: Log the spec to see what we're getting
-	console.log('Loaded spec:', spec);
-	console.log('Spec paths:', spec.paths);
-	console.log('Path count:', Object.keys(spec.paths || {}).length);
-
 	onMount(async () => {
 		if (!containerElement) {
 			console.error('Container element not found!');
@@ -36,16 +31,12 @@
 			// @ts-ignore - swagger-ui-dist doesn't have types
 			const { SwaggerUIBundle, SwaggerUIStandalonePreset } = await import('swagger-ui-dist');
 
-			console.log('Initializing Swagger UI with spec:', specWithServer);
-
 			SwaggerUIBundle({
 				spec: specWithServer,
 				domNode: containerElement,
 				deepLinking: true,
 				presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset]
 			});
-
-			console.log('Swagger UI initialized');
 		} catch (error) {
 			console.error('Failed to initialize Swagger UI:', error);
 		}
@@ -53,38 +44,44 @@
 </script>
 
 <svelte:head>
-	<title>API Documentation - Swagger UI</title>
-	<meta name="description" content="Interactive API documentation for this SvelteKit application" />
+	<title>API Documentation - SvelteKit OpenAPI Generator</title>
+	<meta
+		name="description"
+		content="Interactive API documentation for SvelteKit OpenAPI Generator. Explore and test the API endpoints with Swagger UI."
+	/>
 </svelte:head>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
 	<header
-		class="bg-linear-to-br from-indigo-600 via-purple-600 to-purple-700 px-4 py-8 text-center text-white shadow-lg dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900"
+		class="bg-linear-to-br from-indigo-600 via-purple-600 to-purple-700 px-4 py-16 text-center text-white shadow-lg dark:from-indigo-900 dark:via-purple-900 dark:to-pink-900"
 	>
-		<h1 class="mb-2 text-4xl font-bold">API Documentation</h1>
-		<p class="text-lg opacity-90">Explore and test the API endpoints</p>
+		<div class="container mx-auto">
+			<h1 class="mb-4 text-5xl font-bold">API Documentation</h1>
+			<p class="text-xl opacity-90">
+				Explore and test the API endpoints interactively with Swagger UI
+			</p>
+			<div class="mt-6 flex flex-col items-center justify-center gap-3 text-sm sm:flex-row">
+				<div class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur">
+					<span class="font-semibold">Endpoints:</span>
+					<span>{Object.keys(spec.paths || {}).length}</span>
+				</div>
+				<div class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur">
+					<span class="font-semibold">Schemas:</span>
+					<span>{Object.keys(spec.components?.schemas || {}).length}</span>
+				</div>
+				<div class="flex items-center gap-2 rounded-lg bg-white/20 px-4 py-2 backdrop-blur">
+					<span class="font-semibold">Version:</span>
+					<span>{spec.info.version}</span>
+				</div>
+			</div>
+		</div>
 	</header>
 
-	<!-- Debug: Show if spec is loaded -->
-	{#if spec}
-		<div
-			class="m-4 rounded border-l-4 border-cyan-500 bg-cyan-50 p-4 dark:border-cyan-600 dark:bg-cyan-950"
-		>
-			<strong class="text-cyan-900 dark:text-cyan-100">Debug:</strong>
-			<span class="text-cyan-700 dark:text-cyan-300">
-				Spec loaded with {Object.keys(spec.paths || {}).length} paths
-			</span>
-		</div>
-	{:else}
-		<div
-			class="m-4 rounded border-l-4 border-red-500 bg-red-50 p-4 dark:border-red-600 dark:bg-red-950"
-		>
-			<strong class="text-red-900 dark:text-red-100">Error:</strong>
-			<span class="text-red-700 dark:text-red-300">No spec loaded</span>
-		</div>
-	{/if}
-
-	<div id="swagger-ui-container" class="mx-auto max-w-7xl p-8" bind:this={containerElement}></div>
+	<div
+		id="swagger-ui-container"
+		class="mx-auto max-w-7xl p-4 sm:p-8"
+		bind:this={containerElement}
+	></div>
 </div>
 
 <style>
@@ -97,12 +94,20 @@
 		margin: 2rem 0;
 	}
 
+	:global(.swagger-ui) {
+		font-family: inherit;
+	}
+
 	/* Dark mode support for Swagger UI */
 	:global(.dark .swagger-ui) {
 		filter: invert(0.9) hue-rotate(180deg);
 	}
 
 	:global(.dark .swagger-ui .opblock-tag) {
+		filter: invert(0.9) hue-rotate(180deg);
+	}
+
+	:global(.dark .swagger-ui .model-box) {
 		filter: invert(0.9) hue-rotate(180deg);
 	}
 </style>
