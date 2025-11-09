@@ -47,7 +47,10 @@
 		"lint": "prettier --check .",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"version:patch": "npm version patch --no-git-tag-version && npm run package && npm publish",
+		"version:minor": "npm version minor --no-git-tag-version && npm run package && npm publish",
+		"version:major": "npm version major --no-git-tag-version && npm run package && npm publish"
 	},
 	"peerDependencies": {
 		"vite": "^5.0.0 || ^6.0.0 || ^7.0.0",
