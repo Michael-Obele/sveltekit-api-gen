@@ -7,11 +7,32 @@
 
 This Vite plugin scans your SvelteKit `+page.server.{js,ts}` and `+server.{js,ts}` files, extracts `@swagger` JSDoc blocks, and produces a unified OpenAPI spec with Hot Module Replacement (HMR) support.
 
+## 📋 Table of Contents
+
+- [🔗 Links](#links)
+- [✨ Features](#features)
+- [🔄 Migration from SwaggerUI-Svelte](#migration-from-swaggerui-svelte)
+- [🎨 Styling](#styling)
+- [📦 Installation](#installation)
+- [🚀 Quick Start](#quick-start)
+- [📚 Documentation](#documentation)
+- [🛠️ Integration with Swagger UI](#integration-with-swagger-ui)
+- [⚠️ Limitations & Best Practices](#limitations--best-practices)
+- [🔧 Troubleshooting](#troubleshooting)
+- [🤝 Contributing](#contributing)
+- [📄 License](#license)
+- [🔗 Links (External)](#links-2)
+- [💬 Support](#support)
+
+<a name="links"></a>
+
 ## 🔗 Links
 
 - **📖 Documentation & Demo**: [https://sveltekit-openapi-generator.netlify.app](https://sveltekit-openapi-generator.netlify.app)
 - **📦 npm Package**: [https://www.npmjs.com/package/sveltekit-openapi-generator](https://www.npmjs.com/package/sveltekit-openapi-generator)
 - **🐙 GitHub Repository**: [https://github.com/Michael-Obele/sveltekit-api-gen](https://github.com/Michael-Obele/sveltekit-api-gen)
+
+<a name="features"></a>
 
 ## ✨ Features
 
@@ -25,26 +46,87 @@ This Vite plugin scans your SvelteKit `+page.server.{js,ts}` and `+server.{js,ts
 - 🧩 **Shared Schemas** - Centralize component definitions to avoid duplication
 - 📖 **Swagger UI Ready** - Easy integration with Swagger UI for interactive docs
 
+<a name="migration-from-swaggerui-svelte"></a>
+
+## 🔄 Migration from SwaggerUI-Svelte
+
+If you're migrating from the deprecated [SwaggerUI-Svelte](https://github.com/Michael-Obele/SwaggerUI-Svelte) project, this library offers more control and features for generating OpenAPI specifications from your SvelteKit endpoints.
+
+### Key Changes
+
+- **JSDoc Annotations**: Instead of automatic scanning, use `@swagger` JSDoc blocks above your endpoint handlers for precise documentation.
+- **Plugin-Based Generation**: Configure the Vite plugin to generate specs with HMR support.
+- **Swagger UI Integration**: Use `swagger-ui-dist` for displaying the generated spec, as detailed in the [Integration with Swagger UI](#integration-with-swagger-ui) section below.
+
+### Migration Steps
+
+1. **Install Dependencies**:
+
+   ```bash
+   npm install -D sveltekit-openapi-generator swagger-ui-dist
+   ```
+
+2. **Configure the Plugin**:
+   Add the plugin to your `vite.config.js` before the SvelteKit plugin:
+
+   ```javascript
+   import { sveltekit } from '@sveltejs/kit/vite';
+   import { defineConfig } from 'vite';
+   import openapiPlugin from 'sveltekit-openapi-generator';
+
+   export default defineConfig({
+   	plugins: [
+   		openapiPlugin({
+   			// Optional: path to shared schema definitions
+   			baseSchemasPath: 'src/lib/schemas.js'
+   		}),
+   		sveltekit()
+   	]
+   });
+   ```
+
+3. **Document Your Endpoints**:
+   Add `@swagger` JSDoc to your server files:
+
+   ```javascript
+   /**
+    * @swagger
+    * /api/users:
+    *   get:
+    *     summary: Get all users
+    *     responses:
+    *       200:
+    *         description: Success
+    */
+   export async function GET({}) {
+   	// Your implementation
+   }
+   ```
+
+4. **Integrate Swagger UI**:
+   Follow the steps in the [Integration with Swagger UI](#integration-with-swagger-ui) section to display your API documentation.
+
+For more details, refer to the [Quick Start](#quick-start) guide.
+
+<a name="styling"></a>
+
 ## 🎨 Styling
 
 Demo pages use Tailwind CSS for modern, responsive styling. **Package size remains 76KB** - Tailwind is a devDependency only, and demo routes are excluded from the npm package.
 
-If you want to use this library's components with Tailwind in your project, add the package to your `tailwind.config.js`:
+This project is compatible with Tailwind CSS v4. If upgrading to v4, follow the [official upgrade guide](https://tailwindcss.com/docs/upgrade-guide), which includes using `@import "tailwindcss";` instead of `@tailwind` directives and configuring themes in CSS with `@theme`.
 
-```javascript
-export default {
-	content: [
-		'./src/**/*.{html,js,svelte,ts}',
-		'./node_modules/sveltekit-openapi-generator/**/*.{html,js,svelte,ts}'
-	]
-};
-```
+Since the package does not ship pre-built components with Tailwind classes, no additional Tailwind configuration is required for this library.
+
+<a name="installation"></a>
 
 ## 📦 Installation
 
 ```bash
 npm install -D sveltekit-openapi-generator
 ```
+
+<a name="quick-start"></a>
 
 ## 🚀 Quick Start
 
@@ -212,6 +294,8 @@ If you set `outputPath`, the spec will be written to that location:
 static/openapi.json
 ```
 
+<a name="documentation"></a>
+
 ## 📚 Documentation
 
 ### Plugin Options
@@ -310,6 +394,8 @@ export async function GET({ params }) {
 }
 ```
 
+<a name="integration-with-swagger-ui"></a>
+
 ## 🛠️ Integration with Swagger UI
 
 You can easily add Swagger UI to visualize and test your API interactively:
@@ -322,27 +408,69 @@ npm install swagger-ui-dist
 
 ### Create a Docs Route
 
-```svelte
+Here's a production-ready example with reactive server URLs and robust error handling:
+
+```html
 <!-- src/routes/docs/+page.svelte -->
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import spec from 'virtual:openapi-spec';
+	import { page } from '$app/state';
+	import { dev } from '$app/environment';
 	import 'swagger-ui-dist/swagger-ui.css';
 
-	let containerElement: HTMLElement;
+	let containerElement: HTMLElement | undefined;
+	let spec: any = $state();
 
-	onMount(async () => {
+	// Get the current server URL reactively
+	let currentOrigin = $derived(page.url.origin);
+
+	// Create a modified spec with the current server URL
+	let specWithServer = $derived({
+		...spec,
+		servers: [
+			{
+				url: currentOrigin,
+				description: dev ? 'Development server' : 'Production server'
+			}
+		]
+	});
+
+	async function initializeSwaggerUI() {
 		if (!containerElement) return;
 
-		// @ts-ignore - swagger-ui-dist doesn't have types
-		const { SwaggerUIBundle, SwaggerUIStandalonePreset } = await import('swagger-ui-dist');
+		try {
+			// Attempt to load a virtual spec module (Vite plugin) first
+			try {
+				// @ts-ignore - virtual import may not exist in all environments
+				const virtualSpec = await import('virtual:openapi-spec');
+				spec = virtualSpec?.default ?? virtualSpec;
+			} catch (e) {
+				// Fallback: fetch the openapi spec from the dev middleware
+				try {
+					const res = await fetch('/openapi-spec.json');
+					if (res.ok) spec = await res.json();
+					else spec = { openapi: '3.0.0', info: { title: 'API' }, paths: {} };
+				} catch (fetchErr) {
+					spec = { openapi: '3.0.0', info: { title: 'API' }, paths: {} };
+				}
+			}
 
-		SwaggerUIBundle({
-			spec,
-			domNode: containerElement,
-			deepLinking: true,
-			presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset]
-		});
+			// @ts-ignore - swagger-ui-dist doesn't have types
+			const { SwaggerUIBundle, SwaggerUIStandalonePreset } = await import('swagger-ui-dist');
+
+			SwaggerUIBundle({
+				spec: specWithServer,
+				domNode: containerElement,
+				deepLinking: true,
+				presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset]
+			});
+		} catch (error) {
+			console.error('Failed to initialize Swagger UI:', error);
+		}
+	}
+
+	onMount(() => {
+		initializeSwaggerUI();
 	});
 </script>
 
@@ -350,12 +478,26 @@ npm install swagger-ui-dist
 	<title>API Documentation</title>
 </svelte:head>
 
-<div id="swagger-ui-container" bind:this={containerElement}></div>
+<div class="swagger-container">
+	<div id="swagger-ui-container" bind:this="{containerElement}"></div>
+</div>
 
 <style>
+	.swagger-container {
+		min-height: 600px;
+		padding: 2rem;
+	}
+
 	/* Hide the default Swagger UI top bar */
 	:global(.swagger-ui .topbar) {
 		display: none;
+	}
+
+	/* Dark mode support for Swagger UI */
+	@media (prefers-color-scheme: dark) {
+		:global(.swagger-ui) {
+			filter: invert(0.9) hue-rotate(180deg);
+		}
 	}
 </style>
 ```
@@ -366,11 +508,7 @@ Navigate to `/docs` in your browser to see the interactive API documentation!
 
 The Swagger UI will automatically stay in sync with your spec changes during development thanks to HMR.
 
-### Access Your Docs
-
-Navigate to `/docs` in your browser to see the interactive API documentation!
-
-The Swagger UI will automatically stay in sync with your spec changes during development thanks to HMR.
+<a name="limitations--best-practices"></a>
 
 ## ⚠️ Limitations & Best Practices
 
@@ -388,6 +526,8 @@ The Swagger UI will automatically stay in sync with your spec changes during dev
 ✅ **Dev-Only Imports**: Consider only importing the spec in development mode  
 ✅ **Security**: Don't expose sensitive internal API details in public builds  
 ✅ **Route Groups**: Use `(groups)` for organization without affecting paths
+
+<a name="troubleshooting"></a>
 
 ## 🔧 Troubleshooting
 
@@ -414,19 +554,27 @@ declare module 'virtual:openapi-spec' {
 - Check that path parameters use curly braces: `{id}` not `[id]`
 - Verify the `@swagger` block is directly above the export function
 
+<a name="contributing"></a>
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+<a name="license"></a>
+
 ## 📄 License
 
 MIT © Michael Obele
+
+<a name="links-2"></a>
 
 ## 🔗 Links
 
 - [OpenAPI Specification](https://spec.openapis.org/oas/v3.0.3)
 - [swagger-jsdoc Documentation](https://github.com/Surnet/swagger-jsdoc)
 - [SvelteKit Documentation](https://kit.svelte.dev)
+
+<a name="support"></a>
 
 ## 💬 Support
 
