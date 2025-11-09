@@ -112,7 +112,7 @@ For more details, refer to the [Quick Start](#quick-start) guide.
 
 ## 🎨 Styling
 
-Demo pages use Tailwind CSS for modern, responsive styling. **Package size remains 76KB** - Tailwind is a devDependency only, and demo routes are excluded from the npm package.
+Demo pages use Tailwind CSS for modern, responsive styling. **Package size: 14.80KB packed / 59.96KB unpacked** - Tailwind is a devDependency only, and demo routes are excluded from the npm package.
 
 This project is compatible with Tailwind CSS v4. If upgrading to v4, follow the [official upgrade guide](https://tailwindcss.com/docs/upgrade-guide), which includes using `@import "tailwindcss";` instead of `@tailwind` directives and configuring themes in CSS with `@theme`.
 
