@@ -1,14 +1,7 @@
 /**
- * Server-only state management for todos using Svelte 5 runes
+ * Server-only state management for todos
  *
- * This is a .svelte.ts file which allows us to use runes ($state, $derived, etc.)
- * for reactive state management. While reactivity is primarily for UI, using runes
- * here demonstrates proper Svelte 5 patterns and makes the code more "native" to Svelte 5.
- *
- * Note: According to Svelte docs, we cannot directly export reassigned state.
- * Instead, we export an object containing the state, or use getter functions.
- *
- * This module can only be imported by server-side code.
+ * This module provides reactive-like state management for todos.
  * State persists across requests until server restart.
  */
 
@@ -26,17 +19,10 @@ export interface TodoInput {
 }
 
 /**
- * Reactive state using Svelte 5 $state rune
- *
- * $state creates a deeply reactive proxy, meaning:
- * - Array methods like push, filter work reactively
- * - Property changes on todo objects are tracked
- * - Perfect for Svelte 5's reactive system
- *
- * We wrap it in an object to safely export it (can't directly export reassigned state)
+ * Simple state management class
  */
 class TodoStore {
-	todos = $state<Todo[]>([
+	private todos: Todo[] = [
 		{
 			id: '1',
 			title: 'Implement OpenAPI generator',
@@ -49,7 +35,7 @@ class TodoStore {
 			completed: false,
 			createdAt: new Date().toISOString()
 		}
-	]);
+	];
 
 	// Helper function to generate unique IDs
 	private generateId(): string {
@@ -57,14 +43,14 @@ class TodoStore {
 	}
 
 	/**
-	 * Get all todos (reactive)
+	 * Get all todos
 	 */
 	getAll(): Todo[] {
-		return this.todos;
+		return [...this.todos]; // Return a copy
 	}
 
 	/**
-	 * Get a todo by ID (reactive)
+	 * Get a todo by ID
 	 */
 	getById(id: string): Todo | undefined {
 		return this.todos.find((todo) => todo.id === id);
@@ -95,7 +81,6 @@ class TodoStore {
 			return null;
 		}
 
-		// Direct property mutation works thanks to $state reactivity
 		if (input.title !== undefined) {
 			todo.title = input.title;
 		}
@@ -124,7 +109,7 @@ class TodoStore {
 	}
 
 	/**
-	 * Get todos count (reactive)
+	 * Get todos count
 	 */
 	get count(): number {
 		return this.todos.length;

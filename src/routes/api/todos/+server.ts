@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { todoStore, type TodoInput } from '$lib/server/todos.svelte';
+import { todoStore, type TodoInput } from './store.svelte.js';
 
 /**
  * @swagger

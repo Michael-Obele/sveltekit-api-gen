@@ -1,6 +1,6 @@
 {
 	"name": "sveltekit-openapi-generator",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Generate OpenAPI 3.0 specifications from SvelteKit server endpoints using JSDoc @swagger annotations",
 	"type": "module",
 	"license": "MIT",
