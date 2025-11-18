@@ -512,14 +512,14 @@ playwright.config.ts
 
 ### Pre-Publish Checklist
 
-- [ ] Add MIT LICENSE file
-- [ ] Write comprehensive README.md with usage examples
-- [ ] Test package locally with `npm link`
-- [ ] Run `npm run package` and verify dist/ output
-- [ ] Run `publint` to check package exports
-- [ ] Test in a real SvelteKit project
-- [ ] Set up GitHub repository with proper description/topics
-- [ ] Add CHANGELOG.md for version tracking
+- [x] Add MIT LICENSE file
+- [x] Write comprehensive README.md with usage examples
+- [x] Test package locally with `npm link`
+- [x] Run `npm run package` and verify dist/ output
+- [X] Run `publint` to check package exports
+- [x] Test in a real SvelteKit project
+- [x] Set up GitHub repository with proper description/topics
+- [x] Add CHANGELOG.md for version tracking
 - [ ] Configure GitHub Actions for CI (test + build)
 
 ### Local Testing Workflow
