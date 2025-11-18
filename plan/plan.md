@@ -560,7 +560,7 @@ npm run package  # Rebuilds dist/
 - [x] LICENSE (MIT)
 - [x] `.npmignore`
 - [x] Package.json configuration
-- [ ] Dist build via `npm run package`
-- [ ] Example SvelteKit consumer project
-- [ ] GitHub repository setup
+- [x] Dist build via `npm run package`
+- [x] Example SvelteKit consumer project
+- [x] GitHub repository setup
 - [ ] CI/CD configuration (optional)
