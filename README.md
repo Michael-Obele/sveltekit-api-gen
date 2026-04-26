@@ -565,7 +565,9 @@ declare module 'virtual:openapi-spec' {
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. Before committing, run `bunx vitest run` to make sure the unit and browser suites still pass.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow and checklist.
 
 <a name="license"></a>
 
