@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.3",
+  "openapi": "3.0.0",
   "info": {
     "title": "SvelteKit OpenAPI Generator Demo",
     "version": "1.0.1",
@@ -12,69 +12,6 @@
     }
   ],
   "paths": {
-    "/api/todos": {
-      "get": {
-        "summary": "Get all todos",
-        "description": "Retrieve a list of all todos from in-memory reactive state",
-        "tags": [
-          "Todos"
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved todos",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Todo"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Create a new todo",
-        "description": "Add a new todo to the in-memory reactive state",
-        "tags": [
-          "Todos"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TodoInput"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Todo created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Todo"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid input",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/todos/{id}": {
       "get": {
         "summary": "Get a todo by ID",
@@ -209,6 +146,69 @@
           }
         }
       }
+    },
+    "/api/todos": {
+      "get": {
+        "summary": "Get all todos",
+        "description": "Retrieve a list of all todos from in-memory reactive state",
+        "tags": [
+          "Todos"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved todos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Todo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new todo",
+        "description": "Add a new todo to the in-memory reactive state",
+        "tags": [
+          "Todos"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TodoInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Todo created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Todo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -281,5 +281,6 @@
         "name": "X-API-Key"
       }
     }
-  }
+  },
+  "tags": []
 }

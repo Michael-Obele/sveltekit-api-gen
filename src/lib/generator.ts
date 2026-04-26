@@ -1,10 +1,9 @@
 import { glob } from 'glob';
 import swaggerJsdoc from 'swagger-jsdoc';
-import { merge, isErrorResult } from 'openapi-merge';
 import type { OpenAPIV3 } from 'openapi-types';
 import { resolve } from 'path';
 import { createBaseSpec, type BaseSpecOptions } from './base-spec.js';
-import { writeFileSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, rmSync } from 'fs';
 import { dirname, join } from 'path';
 import ts from 'typescript';
 import { tmpdir } from 'os';
@@ -90,10 +89,8 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		silent = true
 	} = options;
 
-	// Create logger instance
 	const logger = createLogger(silent);
 
-	// Create base spec with shared schemas
 	const baseSpecOptions: BaseSpecOptions = {
 		info,
 		servers,
@@ -105,7 +102,6 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 
 	const baseSpec = createBaseSpec(baseSpecOptions);
 
-	// Find all server endpoint files
 	const files = glob.sync(include, {
 		cwd: rootDir,
 		ignore: exclude,
@@ -114,111 +110,106 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 
 	logger.log(`[openapi] Found ${files.length} server endpoint files`);
 
-	// Parse each file and collect partial specs
-	const partials: Array<{ oas: OpenAPIV3.Document }> = [];
-	const tempFiles: string[] = [];
-
-	for (const file of files) {
-		const fullPath = resolve(rootDir, file);
-		let apiPath = fullPath;
-
-		try {
-			// For TypeScript files, we need to strip type annotations
-			// because swagger-jsdoc doesn't understand TypeScript syntax
-			if (file.endsWith('.ts')) {
-				const sourceCode = readFileSync(fullPath, 'utf-8');
-				const strippedCode = stripTypeScript(sourceCode);
-
-				// Write to a temporary .js file
-				const tempPath = join(
-					tmpdir(),
-					`openapi-${Date.now()}-${Math.random().toString(36).slice(2)}.js`
-				);
-				writeFileSync(tempPath, strippedCode, 'utf-8');
-				tempFiles.push(tempPath);
-				apiPath = tempPath;
-			}
-
-			const partial = swaggerJsdoc({
-				definition: {
-					openapi: '3.0.0',
-					info: baseSpec.info
-				},
-				apis: [apiPath.replaceAll('[', '\\[').replaceAll(']', '\\]')],
-				failOnErrors
-			}) as OpenAPIV3.Document;
-
-			// Check if the file actually has any swagger documentation
-			const hasPaths = partial.paths && Object.keys(partial.paths).length > 0;
-			const hasSchemas =
-				partial.components?.schemas && Object.keys(partial.components.schemas).length > 0;
-
-			if (!hasPaths && !hasSchemas) {
-				logger.warn(`[openapi] No @swagger docs found in ${file}; skipping.`);
-				continue;
-			}
-
-			partials.push({ oas: partial });
-			logger.log(
-				`[openapi] Parsed ${file}: found ${Object.keys(partial.paths || {}).length} paths`
-			);
-		} catch (error) {
-			logger.error(
-				`[openapi] Failed to parse ${file}:`,
-				error instanceof Error ? error.message : error
-			);
-			if (failOnErrors) {
-				throw error;
-			}
-		}
-	}
-
-	// Clean up temporary files
-	for (const tempFile of tempFiles) {
-		try {
-			unlinkSync(tempFile);
-		} catch (error) {
-			// Ignore cleanup errors
-		}
-	}
-
-	// Merge all specs together
-	if (partials.length === 0) {
-		logger.warn('[openapi] No API documentation found in any files');
-		return baseSpec;
-	}
+	const tempDir = join(tmpdir(), `openapi-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	mkdirSync(tempDir, { recursive: true });
 
 	try {
-		const mergeResult = merge([
-			{
-				oas: baseSpec as any
-			},
-			...partials.map((p) => ({
-				oas: p.oas as any,
-				pathModification: prependPath ? { prepend: prependPath } : undefined
-			}))
-		]);
+		for (const file of files) {
+			const fullPath = resolve(rootDir, file);
+			const sourceCode = readFileSync(fullPath, 'utf-8');
+			const transformedCode = file.endsWith('.ts') ? stripTypeScript(sourceCode) : sourceCode;
+			const safeRelativePath = file.endsWith('.ts') ? file.replace(/\.ts$/, '.js') : file;
+			const tempPath = join(tempDir, safeRelativePath.replace(/[[\]]/g, '_'));
+			mkdirSync(dirname(tempPath), { recursive: true });
+			writeFileSync(tempPath, transformedCode, 'utf-8');
+		}
 
-		if (isErrorResult(mergeResult)) {
-			logger.error('[openapi] Merge errors:', mergeResult.message);
-			if (failOnErrors) {
-				throw new Error(`OpenAPI merge failed: ${mergeResult.message}`);
-			}
+		const partial = swaggerJsdoc({
+			definition: {
+				openapi: '3.0.0',
+				info: baseSpec.info
+			},
+			apis: [join(tempDir, '**/*.js')],
+			failOnErrors
+		}) as OpenAPIV3.Document;
+
+		const hasPaths = partial.paths && Object.keys(partial.paths).length > 0;
+		const hasSchemas =
+			partial.components?.schemas && Object.keys(partial.components.schemas).length > 0;
+
+		if (!hasPaths && !hasSchemas) {
+			logger.warn('[openapi] No @swagger docs found in any files');
 			return baseSpec;
 		}
 
-		const mergedSpec = mergeResult.output as OpenAPIV3.Document;
-		logger.log(
-			`[openapi] Successfully merged ${partials.length} specs with ${Object.keys(mergedSpec.paths || {}).length} total paths`
-		);
+		logger.log(`[openapi] Parsed files: found ${Object.keys(partial.paths || {}).length} paths`);
+
+
+			const prefixedPaths = Object.fromEntries(
+				Object.entries(partial.paths ?? {}).map(([path, pathItem]) => {
+					const normalizedPath = prependPath
+						? `${prependPath}${path.startsWith('/') ? path : `/${path}`}`
+						: path;
+					return [normalizedPath, pathItem];
+				})
+			);
+
+			const mergedComponents: NonNullable<OpenAPIV3.Document['components']> = {};
+			const baseComponents = baseSpec.components ?? {};
+			const partialComponents = partial.components ?? {};
+			const componentKeys: Array<keyof OpenAPIV3.ComponentsObject> = [
+				'schemas',
+				'securitySchemes',
+				'responses',
+				'parameters',
+				'requestBodies',
+				'headers'
+			];
+
+			for (const key of componentKeys) {
+				const mergedValue = {
+					...(baseComponents[key] ?? {}),
+					...(partialComponents[key] ?? {})
+				};
+
+				if (Object.keys(mergedValue).length > 0) {
+					mergedComponents[key] = mergedValue as never;
+				}
+			}
+
+			const mergedSpec: OpenAPIV3.Document = {
+				...baseSpec,
+				...partial,
+				paths: {
+					...(baseSpec.paths ?? {}),
+					...prefixedPaths
+				}
+			};
+
+			if (Object.keys(mergedComponents).length > 0) {
+				mergedSpec.components = mergedComponents;
+			}
+
+			logger.log(
+				`[openapi] Successfully merged with ${Object.keys(mergedSpec.paths || {}).length} total paths`
+			);
 
 		return mergedSpec;
 	} catch (error) {
-		logger.error('[openapi] Merge failed:', error instanceof Error ? error.message : error);
+		logger.error(
+			'[openapi] Failed to generate spec:',
+			error instanceof Error ? error.message : error
+		);
 		if (failOnErrors) {
 			throw error;
 		}
 		return baseSpec;
+	} finally {
+		try {
+			rmSync(tempDir, { recursive: true, force: true });
+		} catch (error) {
+			// Ignore cleanup errors
+		}
 	}
 }
 

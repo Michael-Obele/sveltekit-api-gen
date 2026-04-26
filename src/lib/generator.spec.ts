@@ -105,6 +105,51 @@ export const GET: RequestHandler = async ({ params }: { params: { id: string } }
 			expect(spec.paths?.['/api/users']?.get?.summary).toBe('Get all users');
 		});
 
+		it('should parse typed server files inside bracketed SvelteKit folders', () => {
+			const routesDir = join(
+				tempDir,
+				'src',
+				'routes',
+				'api',
+				'upload',
+				'status',
+				'[uploadId=uuid]'
+			);
+			mkdirSync(routesDir, { recursive: true });
+
+			writeFileSync(
+				join(routesDir, '+server.ts'),
+				`
+import type { RequestHandler } from '@sveltejs/kit';
+
+/**
+ * @swagger
+ * /api/upload/status/{uploadId}:
+ *   get:
+ *     summary: Get upload status
+ *     responses:
+ *       200:
+ *         description: Upload status
+ */
+export const GET: RequestHandler = async () => {
+	return new Response('status');
+};
+`,
+				'utf-8'
+			);
+
+			const spec = generateSpec({
+				rootDir: tempDir,
+				info: {
+					title: 'Test API',
+					version: '1.0.0'
+				}
+			});
+
+			expect(Object.keys(spec.paths || {})).toContain('/api/upload/status/{uploadId}');
+			expect(spec.paths?.['/api/upload/status/{uploadId}']?.get?.summary).toBe('Get upload status');
+		});
+
 		it('should merge shared schemas from baseSchemasPath', () => {
 			// Create shared schemas file
 			const libDir = join(tempDir, 'src', 'lib');
