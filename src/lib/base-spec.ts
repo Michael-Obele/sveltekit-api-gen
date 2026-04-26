@@ -3,6 +3,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 import { resolve } from 'path';
 import { readFileSync } from 'fs';
 import yaml from 'js-yaml';
+import { createLogger } from './logger.js';
 
 export interface BaseSpecOptions {
 	/**
@@ -26,6 +27,10 @@ export interface BaseSpecOptions {
 	 * Root directory for resolving paths
 	 */
 	rootDir: string;
+	/**
+	 * Whether to suppress logging output
+	 */
+	silent?: boolean;
 }
 
 /**
@@ -41,8 +46,11 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 		servers = [],
 		baseSchemasPath,
 		yamlFiles = [],
-		rootDir
+		rootDir,
+		silent = true
 	} = options;
+
+	const logger = createLogger(silent);
 
 	// Start with minimal base spec
 	const baseSpec: OpenAPIV3.Document = {
@@ -109,11 +117,11 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 				hasComponents = true;
 			}
 
-			console.log(
+			logger.log(
 				`[openapi] Loaded ${Object.keys(components.schemas || {}).length} shared schemas from ${baseSchemasPath}`
 			);
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[openapi] Failed to parse base schemas from ${baseSchemasPath}:`,
 				error instanceof Error ? error.message : error
 			);
@@ -164,9 +172,9 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 				hasComponents = true;
 			}
 
-			console.log(`[openapi] Loaded components from YAML file ${yamlFile}`);
+			logger.log(`[openapi] Loaded components from YAML file ${yamlFile}`);
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[openapi] Failed to parse YAML file ${yamlFile}:`,
 				error instanceof Error ? error.message : error
 			);

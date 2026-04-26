@@ -8,6 +8,7 @@ import { writeFileSync, mkdirSync, readFileSync, unlinkSync } from 'fs';
 import { dirname, join } from 'path';
 import ts from 'typescript';
 import { tmpdir } from 'os';
+import { createLogger } from './logger.js';
 
 export interface GeneratorOptions {
 	/**
@@ -50,6 +51,10 @@ export interface GeneratorOptions {
 	 * Output path for writing the spec during build (optional)
 	 */
 	outputPath?: string;
+	/**
+	 * Whether to suppress logging output
+	 */
+	silent?: boolean;
 }
 
 /**
@@ -81,8 +86,12 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		prependPath = '',
 		include = ['src/routes/**/{+server,+page.server}.{js,ts}'],
 		exclude = ['**/node_modules/**', '**/.svelte-kit/**'],
-		failOnErrors = false
+		failOnErrors = false,
+		silent = true
 	} = options;
+
+	// Create logger instance
+	const logger = createLogger(silent);
 
 	// Create base spec with shared schemas
 	const baseSpecOptions: BaseSpecOptions = {
@@ -90,7 +99,8 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		servers,
 		baseSchemasPath,
 		yamlFiles,
-		rootDir
+		rootDir,
+		silent
 	};
 
 	const baseSpec = createBaseSpec(baseSpecOptions);
@@ -102,7 +112,7 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		absolute: false
 	});
 
-	console.log(`[openapi] Found ${files.length} server endpoint files`);
+	logger.log(`[openapi] Found ${files.length} server endpoint files`);
 
 	// Parse each file and collect partial specs
 	const partials: Array<{ oas: OpenAPIV3.Document }> = [];
@@ -144,16 +154,16 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 				partial.components?.schemas && Object.keys(partial.components.schemas).length > 0;
 
 			if (!hasPaths && !hasSchemas) {
-				console.warn(`[openapi] No @swagger docs found in ${file}; skipping.`);
+				logger.warn(`[openapi] No @swagger docs found in ${file}; skipping.`);
 				continue;
 			}
 
 			partials.push({ oas: partial });
-			console.log(
+			logger.log(
 				`[openapi] Parsed ${file}: found ${Object.keys(partial.paths || {}).length} paths`
 			);
 		} catch (error) {
-			console.error(
+			logger.error(
 				`[openapi] Failed to parse ${file}:`,
 				error instanceof Error ? error.message : error
 			);
@@ -174,7 +184,7 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 
 	// Merge all specs together
 	if (partials.length === 0) {
-		console.warn('[openapi] No API documentation found in any files');
+		logger.warn('[openapi] No API documentation found in any files');
 		return baseSpec;
 	}
 
@@ -190,7 +200,7 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		]);
 
 		if (isErrorResult(mergeResult)) {
-			console.error('[openapi] Merge errors:', mergeResult.message);
+			logger.error('[openapi] Merge errors:', mergeResult.message);
 			if (failOnErrors) {
 				throw new Error(`OpenAPI merge failed: ${mergeResult.message}`);
 			}
@@ -198,13 +208,13 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 		}
 
 		const mergedSpec = mergeResult.output as OpenAPIV3.Document;
-		console.log(
+		logger.log(
 			`[openapi] Successfully merged ${partials.length} specs with ${Object.keys(mergedSpec.paths || {}).length} total paths`
 		);
 
 		return mergedSpec;
 	} catch (error) {
-		console.error('[openapi] Merge failed:', error instanceof Error ? error.message : error);
+		logger.error('[openapi] Merge failed:', error instanceof Error ? error.message : error);
 		if (failOnErrors) {
 			throw error;
 		}
@@ -215,14 +225,16 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 /**
  * Write the generated spec to a file
  */
-export function writeSpec(spec: OpenAPIV3.Document, outputPath: string): void {
+export function writeSpec(spec: OpenAPIV3.Document, outputPath: string, silent = true): void {
+	const logger = createLogger(silent);
+
 	try {
 		const dir = dirname(outputPath);
 		mkdirSync(dir, { recursive: true });
 		writeFileSync(outputPath, JSON.stringify(spec, null, 2), 'utf-8');
-		console.log(`[openapi] Wrote spec to ${outputPath}`);
+		logger.log(`[openapi] Wrote spec to ${outputPath}`);
 	} catch (error) {
-		console.error(
+		logger.error(
 			`[openapi] Failed to write spec to ${outputPath}:`,
 			error instanceof Error ? error.message : error
 		);

@@ -1,6 +1,7 @@
 import type { Plugin, ViteDevServer, ResolvedConfig } from 'vite';
 import type { OpenAPIV3 } from 'openapi-types';
 import { generateSpec, writeSpec, type GeneratorOptions } from './generator.js';
+import { createLogger } from './logger.js';
 import { resolve } from 'path';
 import { debounce } from './utils.js';
 
@@ -48,6 +49,10 @@ export interface OpenAPIPluginOptions {
 	 * Debounce delay in milliseconds for file watching (default: 200)
 	 */
 	debounceMs?: number;
+	/**
+	 * Whether to suppress logging output (default: true)
+	 */
+	silent?: boolean;
 }
 
 // Virtual module ID constants
@@ -64,6 +69,8 @@ export default function openapiPlugin(options: OpenAPIPluginOptions = {}): Plugi
 	let cachedSpecJson: string | null = null;
 
 	const debounceMs = options.debounceMs ?? 200;
+	const silent = options.silent ?? true;
+	const logger = createLogger(silent);
 
 	/**
 	 * Generate the OpenAPI spec and update caches
@@ -79,7 +86,8 @@ export default function openapiPlugin(options: OpenAPIPluginOptions = {}): Plugi
 			include: options.include,
 			exclude: options.exclude,
 			failOnErrors: options.failOnErrors,
-			outputPath: options.outputPath
+			outputPath: options.outputPath,
+			silent
 		};
 
 		cachedSpec = generateSpec(generatorOptions);
@@ -113,7 +121,7 @@ export default function openapiPlugin(options: OpenAPIPluginOptions = {}): Plugi
 			const regenerateDebounced = debounce(() => {
 				if (!devServer) return;
 
-				console.log('[openapi] Regenerating spec due to file changes...');
+				logger.log('[openapi] Regenerating spec due to file changes...');
 				regenerateSpec();
 
 				// Find the virtual module in the module graph
@@ -195,7 +203,7 @@ export default function openapiPlugin(options: OpenAPIPluginOptions = {}): Plugi
 			// Write spec to disk if outputPath is specified
 			if (options.outputPath && cachedSpec) {
 				const outputFilePath = resolve(config.root, options.outputPath);
-				writeSpec(cachedSpec, outputFilePath);
+				writeSpec(cachedSpec, outputFilePath, silent);
 			}
 		}
 	};

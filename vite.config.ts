@@ -25,7 +25,8 @@ export default defineConfig({
 				}
 			],
 			outputPath: 'static/openapi.json',
-			debounceMs: 100
+			debounceMs: 100,
+			silent: false
 		}),
 		sveltekit(),
 		sveltekitOG()
