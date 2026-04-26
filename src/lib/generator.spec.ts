@@ -150,6 +150,58 @@ export const GET: RequestHandler = async () => {
 			expect(spec.paths?.['/api/upload/status/{uploadId}']?.get?.summary).toBe('Get upload status');
 		});
 
+		it('should honor include and exclude patterns when discovering routes', () => {
+			const includedDir = join(tempDir, 'src', 'routes', 'api', 'included');
+			const excludedDir = join(tempDir, 'src', 'routes', 'api', 'excluded');
+			mkdirSync(includedDir, { recursive: true });
+			mkdirSync(excludedDir, { recursive: true });
+
+			writeFileSync(
+				join(includedDir, '+server.js'),
+				`
+/**
+ * @swagger
+ * /api/included:
+ *   get:
+ *     summary: Included route
+ */
+export async function GET() {
+	return new Response('included');
+}
+`,
+				'utf-8'
+			);
+
+			writeFileSync(
+				join(excludedDir, '+server.js'),
+				`
+/**
+ * @swagger
+ * /api/excluded:
+ *   get:
+ *     summary: Excluded route
+ */
+export async function GET() {
+	return new Response('excluded');
+}
+`,
+				'utf-8'
+			);
+
+			const spec = generateSpec({
+				rootDir: tempDir,
+				include: ['src/routes/api/**/+server.js'],
+				exclude: ['**/excluded/**'],
+				info: {
+					title: 'Test API',
+					version: '1.0.0'
+				}
+			});
+
+			expect(Object.keys(spec.paths || {})).toContain('/api/included');
+			expect(Object.keys(spec.paths || {})).not.toContain('/api/excluded');
+		});
+
 		it('should merge shared schemas from baseSchemasPath', () => {
 			// Create shared schemas file
 			const libDir = join(tempDir, 'src', 'lib');

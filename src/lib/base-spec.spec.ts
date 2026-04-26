@@ -105,6 +105,48 @@ describe('base-spec', () => {
 			});
 		});
 
+		it('should load and merge schemas from a TypeScript baseSchemasPath', () => {
+			const libDir = join(tempDir, 'src', 'lib');
+			mkdirSync(libDir, { recursive: true });
+
+			writeFileSync(
+				join(libDir, 'schemas.ts'),
+				`
+import type { SchemaObject } from 'openapi-types';
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Session:
+ *       type: object
+ *       properties:
+ *         token:
+ *           type: string
+ */
+export const SessionSchema: SchemaObject = {};
+`,
+				'utf-8'
+			);
+
+			const spec = createBaseSpec({
+				rootDir: tempDir,
+				baseSchemasPath: 'src/lib/schemas.ts',
+				info: {
+					title: 'Test API',
+					version: '1.0.0'
+				}
+			});
+
+			expect(spec.components?.schemas).toHaveProperty('Session');
+			expect(spec.components?.schemas?.Session).toMatchObject({
+				type: 'object',
+				properties: {
+					token: { type: 'string' }
+				}
+			});
+		});
+
 		it('should merge security schemes from baseSchemasPath', () => {
 			// Create schemas file with security schemes
 			const libDir = join(tempDir, 'src', 'lib');

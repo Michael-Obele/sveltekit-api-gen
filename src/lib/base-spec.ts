@@ -1,8 +1,11 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import type { OpenAPIV3 } from 'openapi-types';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, rmSync } from 'fs';
+import { dirname, join } from 'path';
 import yaml from 'js-yaml';
+import ts from 'typescript';
+import { tmpdir } from 'os';
 import { createLogger } from './logger.js';
 
 export interface BaseSpecOptions {
@@ -52,6 +55,19 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 
 	const logger = createLogger(silent);
 
+	const stripTypeScript = (code: string): string => {
+		const result = ts.transpileModule(code, {
+			compilerOptions: {
+				target: ts.ScriptTarget.ESNext,
+				module: ts.ModuleKind.ESNext,
+				removeComments: false,
+				isolatedModules: true
+			}
+		});
+
+		return result.outputText;
+	};
+
 	// Start with minimal base spec
 	const baseSpec: OpenAPIV3.Document = {
 		openapi: '3.0.0',
@@ -66,9 +82,23 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 
 	// If baseSchemasPath is provided, parse it for shared schemas
 	if (baseSchemasPath) {
+		const tempDir = join(
+			tmpdir(),
+			`openapi-base-spec-${Date.now()}-${Math.random().toString(36).slice(2)}`
+		);
+		mkdirSync(tempDir, { recursive: true });
+
 		try {
 			const schemaFilePath = resolve(rootDir, baseSchemasPath);
 			const apis = [schemaFilePath];
+
+			if (schemaFilePath.endsWith('.ts')) {
+				const sourceCode = readFileSync(schemaFilePath, 'utf-8');
+				const tempSchemaPath = join(tempDir, 'base-schemas.js');
+				mkdirSync(dirname(tempSchemaPath), { recursive: true });
+				writeFileSync(tempSchemaPath, stripTypeScript(sourceCode), 'utf-8');
+				apis[0] = tempSchemaPath;
+			}
 
 			const schemaSpec = swaggerJsdoc({
 				definition: {
@@ -125,6 +155,8 @@ export function createBaseSpec(options: BaseSpecOptions): OpenAPIV3.Document {
 				`[openapi] Failed to parse base schemas from ${baseSchemasPath}:`,
 				error instanceof Error ? error.message : error
 			);
+		} finally {
+			rmSync(tempDir, { recursive: true, force: true });
 		}
 	}
 
