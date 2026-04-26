@@ -134,7 +134,7 @@ export function generateSpec(options: GeneratorOptions): OpenAPIV3.Document {
 					openapi: '3.0.0',
 					info: baseSpec.info
 				},
-				apis: [apiPath],
+				apis: [apiPath.replaceAll('[', '\\[').replaceAll(']', '\\]')],
 				failOnErrors
 			}) as OpenAPIV3.Document;
 
